@@ -2,54 +2,49 @@ package com.example.jogadorclubeapi.services;
 
 import com.example.jogadorclubeapi.models.Jogador;
 import com.example.jogadorclubeapi.models.Clube;
+import com.example.jogadorclubeapi.repositories.JogadorRepository;
+import com.example.jogadorclubeapi.repositories.ClubeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.List;
 
 @Service
 public class JogadorService {
 
-    private Map<Long, Jogador> jogadores = new HashMap<>();
-    private Long contadorId = 1L;
+    @Autowired
+    private JogadorRepository jogadorRepository;
 
     @Autowired
-    private ClubeService clubeService;
+    private ClubeRepository clubeRepository;
 
-    public Collection<Jogador> obterTodosJogadores() {
-        return jogadores.values();
+    public List<Jogador> obterTodosJogadores() {
+        return jogadorRepository.findAll();
     }
 
     public Jogador obterJogadorPorId(Long id) {
-        return jogadores.get(id);
+        return jogadorRepository.findById(id).orElse(null);
     }
 
     public Jogador criarJogador(Jogador jogador) {
-        jogador.setId(contadorId++);
-        jogadores.put(jogador.getId(), jogador);
-
-        // Adiciona o jogador à lista de jogadores do clube
-        Clube clube = clubeService.obterClubePorId(jogador.getClubeId());
+        Clube clube = clubeRepository.findById(jogador.getClube().getId()).orElse(null);
         if (clube != null) {
-            clube.getJogadores().add(jogador);
+            jogador.setClube(clube);
+            return jogadorRepository.save(jogador);
         }
-        return jogador;
+        throw new RuntimeException("Clube não encontrado");
     }
 
-    public Jogador atualizarJogador(Long id, Jogador jogador) {
-        jogador.setId(id);
-        jogadores.put(id, jogador);
-        return jogador;
+    public Jogador atualizarJogador(Long id, Jogador jogadorAtualizado) {
+        Jogador jogador = obterJogadorPorId(id);
+        if (jogador != null) {
+            jogador.setNome(jogadorAtualizado.getNome());
+            return jogadorRepository.save(jogador);
+        }
+        return null;
     }
 
     public void deletarJogador(Long id) {
-        Jogador jogador = jogadores.remove(id);
-        if (jogador != null) {
-            // Remove o jogador da lista de jogadores do clube
-            Clube clube = clubeService.obterClubePorId(jogador.getClubeId());
-            if (clube != null) {
-                clube.getJogadores().removeIf(j -> j.getId().equals(id));
-            }
-        }
+        jogadorRepository.deleteById(id);
     }
 }

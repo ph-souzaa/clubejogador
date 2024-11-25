@@ -1,37 +1,40 @@
 package com.example.jogadorclubeapi.services;
 
 import com.example.jogadorclubeapi.models.Clube;
+import com.example.jogadorclubeapi.repositories.ClubeRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.List;
 
 @Service
 public class ClubeService {
 
-    private Map<Long, Clube> clubes = new HashMap<>();
-    private Long contadorId = 1L;
+    @Autowired
+    private ClubeRepository clubeRepository;
 
-    public Collection<Clube> obterTodosClubes() {
-        return clubes.values();
+    public List<Clube> obterTodosClubes() {
+        return clubeRepository.findAll();
     }
 
     public Clube obterClubePorId(Long id) {
-        return clubes.get(id);
+        return clubeRepository.findById(id).orElse(null);
     }
 
     public Clube criarClube(Clube clube) {
-        clube.setId(contadorId++);
-        clubes.put(clube.getId(), clube);
-        return clube;
+        return clubeRepository.save(clube);
     }
 
-    public Clube atualizarClube(Long id, Clube clube) {
-        clube.setId(id);
-        clubes.put(id, clube);
-        return clube;
+    public Clube atualizarClube(Long id, Clube clubeAtualizado) {
+        Clube clube = obterClubePorId(id);
+        if (clube != null) {
+            clube.setNome(clubeAtualizado.getNome());
+            return clubeRepository.save(clube);
+        }
+        return null;
     }
 
     public void deletarClube(Long id) {
-        clubes.remove(id);
+        clubeRepository.deleteById(id);
     }
 }
